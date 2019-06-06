@@ -4,10 +4,67 @@ import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.Persistence;
 
-public class MainClass {
+//for Shiro
+import org.apache.shiro.SecurityUtils;
+import org.apache.shiro.authc.*;
+import org.apache.shiro.config.IniSecurityManagerFactory;
+import org.apache.shiro.mgt.SecurityManager;
+import org.apache.shiro.session.Session;
+import org.apache.shiro.subject.Subject;
+import org.apache.shiro.util.Factory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+//import org.apache.log4j.*;
 
+//@SuppressWarnings("deprecation")
+public class MainClass {
+	//private static final transient Logger log = LoggerFactory.getLogger(MainClass.class);
+	
+	@SuppressWarnings("deprecation")
 	public static void main(String[] args) {
 		
+		//Enable Shiro
+	    Factory<SecurityManager> factory = new IniSecurityManagerFactory("classpath:shiro.ini"); //1.
+	    
+	    SecurityManager securityManager = factory.getInstance(); //2.
+	    SecurityUtils.setSecurityManager(securityManager); //3.
+	   
+	    //Get the current User info
+	    Subject currentUser = SecurityUtils.getSubject();
+	    
+	    //Create session to set user related attributes 
+	    Session session = currentUser.getSession();
+	    session.setAttribute( "someKey", "aValue" );
+	     
+	    
+	    try {
+	    	
+	    	//collect user principals and credentials such as username/password	    
+	    	if ( !currentUser.isAuthenticated() ) {
+	    		UsernamePasswordToken token = new UsernamePasswordToken("elvis", "123456");
+	        
+	    		//if user check remember me, no additional configuration is required, just this one
+	    		token.setRememberMe(true);
+	    		currentUser.login(token);
+	    	}
+	    } catch ( UnknownAccountException uae ) {
+	        //username wasn't in the system
+	    } catch ( IncorrectCredentialsException ice ) {
+	        //password didn't match
+	    } catch ( LockedAccountException lae ) {
+	        //account for that username is locked - can't login.  Show them a message?
+	    } catch ( AuthenticationException ae ) {
+	        //unknown error?
+	    }
+		
+	    //print the user info
+	    System.out.println(currentUser.getPrincipal());
+	    
+	    //removes all identifying information and invalidates their session too.
+	    currentUser.logout(); 
+	    
+	    
+	    /*
 		DBTools DBC = new DBTools();
 		//DBC.dropTable("userin");
 		//DBC.createSequence();
@@ -36,7 +93,7 @@ public class MainClass {
 		user2.setEmail("eax@etgraszrx.com");
 		user2.setBirthday("22.06.1994");
 		
-        /*
+        ///*
 		EntityManagerFactory EMF = Persistence.createEntityManagerFactory("userinfo");
 		EntityManager EM = EMF.createEntityManager();
 		EM.getTransaction().begin();
